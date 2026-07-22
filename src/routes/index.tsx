@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Real-time VJ performance surface with audio engine, visual engine, MIDI, and AI-assisted composition tools.",
+          "A live visual/audio performance surface: real-time visual engine, audio analysis, MIDI control, and AI-assisted composition.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
