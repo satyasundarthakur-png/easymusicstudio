@@ -1,24 +1,57 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, ClientOnly } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const VjClient = lazy(() => import("../vj/VjClient"));
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "VJ Studio — Live Performance Surface" },
+      {
+        name: "description",
+        content:
+          "A live visual/audio performance surface: real-time visual engine, audio analysis, MIDI control, and AI-assisted composition.",
+      },
+      { property: "og:title", content: "VJ Studio — Live Performance Surface" },
+      {
+        property: "og:description",
+        content:
+          "Real-time VJ performance surface with audio engine, visual engine, MIDI, and AI-assisted composition tools.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Loading() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#030107",
+        color: "#85818f",
+        fontFamily: "'DM Mono', ui-monospace, monospace",
+        fontSize: 12,
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+      }}
     >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+      Booting performance surface…
     </div>
+  );
+}
+
+function Index() {
+  return (
+    <ClientOnly fallback={<Loading />}>
+      <Suspense fallback={<Loading />}>
+        <VjClient />
+      </Suspense>
+    </ClientOnly>
   );
 }
