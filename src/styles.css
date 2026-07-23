@@ -825,6 +825,13 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 9px; height
 .update-install-button:hover:not(:disabled) { border-color: rgba(117,244,197,.8); }
 .update-install-button:disabled { opacity: .7; cursor: wait; }
 .update-notes { color: #8a91a0; font: 500 8px/1.4 "DM Mono", monospace; }
+.gemini-key-panel > header b.update-ready { color: #86f4cb; }
+.gemini-key-notice { margin: 0; color: #8a91a0; font: 500 8px/1.55 "DM Mono", monospace; }
+.gemini-key-notice strong { color: #ffb454; font-weight: 700; }
+.gemini-key-notice a { color: #9adfff; }
+.gemini-key-panel .workspace-settings-actions { grid-template-columns: 1fr auto auto; }
+.gemini-key-panel input[type="password"] { height: 30px; padding: 0 8px; border: 1px solid rgba(53,220,255,.24); border-radius: 6px; background: rgba(255,255,255,.02); color: #e4e7ef; font: 600 9px "DM Mono", monospace; }
+.gemini-key-clear { border-color: rgba(255,79,134,.3) !important; color: #ff8caf !important; background: rgba(255,79,134,.05) !important; }
 
 /* Toast notifications */
 .toast-stack { position: fixed; right: 16px; bottom: 16px; z-index: 400; display: flex; flex-direction: column; gap: 8px; max-width: min(380px, calc(100vw - 32px)); pointer-events: none; }

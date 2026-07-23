@@ -1,5 +1,12 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import type { PerformanceTemplate, TrackId, TrackSnapshot } from "./types";
+import {
+  browserLyriaStatusAvailable,
+  pollBrowserLyriaAudio,
+  startBrowserLyriaSession,
+  stopBrowserLyriaSession,
+  updateBrowserLyriaSession,
+} from "./browserLyriaBridge";
 
 export type LyriaRealtimeScale =
   | "C_MAJOR_A_MINOR"
@@ -645,6 +652,21 @@ const TEMPLATE_STYLE_MAP: Record<string, string> = {
 
 export async function getLyriaRealtimeStatus(deck: LyriaRealtimeDeckId = "main"): Promise<LyriaRealtimeStatus> {
   if (!isTauri()) {
+    if (browserLyriaStatusAvailable()) {
+      return {
+        deck,
+        available: true,
+        provider: "browser_direct",
+        model: "models/lyria-realtime-exp",
+        sampleRateHz: 48_000,
+        channels: 2,
+        audioFormat: "pcm16",
+        instrumentalOnly: true,
+        reason: "Using your Gemini API key directly from the browser — key is not protected server-side",
+        bufferedAudioBytes: 0,
+        streamedAudioBytes: 0,
+      };
+    }
     return {
       deck,
       available: false,
@@ -654,7 +676,7 @@ export async function getLyriaRealtimeStatus(deck: LyriaRealtimeDeckId = "main")
       channels: 2,
       audioFormat: "pcm16",
       instrumentalOnly: true,
-      reason: "Lyria RealTime requires the desktop app so the Gemini key stays out of React",
+      reason: "Add a Gemini API key in Settings, or use the desktop app, to enable Lyria RealTime",
       bufferedAudioBytes: 0,
       streamedAudioBytes: 0,
     };
@@ -766,7 +788,10 @@ export async function startLyriaRealtime(
   request: LyriaRealtimeRequest,
   deck: LyriaRealtimeDeckId = "main",
 ): Promise<LyriaRealtimeSession> {
-  if (!isTauri()) throw new Error("Lyria RealTime requires the desktop app");
+  if (!isTauri()) {
+    if (browserLyriaStatusAvailable()) return startBrowserLyriaSession(request, deck);
+    throw new Error("Lyria RealTime requires the desktop app, or a Gemini API key set in Settings");
+  }
   return invoke<LyriaRealtimeSession>("lyria_realtime_start", { deck, request });
 }
 
@@ -774,17 +799,24 @@ export async function updateLyriaRealtime(
   request: LyriaRealtimeRequest,
   deck: LyriaRealtimeDeckId = "main",
 ): Promise<LyriaRealtimeSession> {
-  if (!isTauri()) throw new Error("Lyria RealTime requires the desktop app");
+  if (!isTauri()) {
+    if (browserLyriaStatusAvailable()) return updateBrowserLyriaSession(request, deck);
+    throw new Error("Lyria RealTime requires the desktop app, or a Gemini API key set in Settings");
+  }
   return invoke<LyriaRealtimeSession>("lyria_realtime_update", { deck, request });
 }
 
 export async function stopLyriaRealtime(deck: LyriaRealtimeDeckId = "main"): Promise<void> {
-  if (!isTauri()) return;
+  if (!isTauri()) {
+    stopBrowserLyriaSession(deck);
+    return;
+  }
   await invoke<void>("lyria_realtime_stop", { deck });
 }
 
 export async function pollLyriaRealtimeAudio(deck: LyriaRealtimeDeckId = "main"): Promise<LyriaRealtimeAudioPoll> {
   if (!isTauri()) {
+    if (browserLyriaStatusAvailable()) return pollBrowserLyriaAudio(deck);
     return {
       deck,
       sampleRateHz: 48_000,

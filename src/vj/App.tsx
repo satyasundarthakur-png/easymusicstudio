@@ -79,6 +79,7 @@ import {
   type LyriaRealtimeStatus,
   type LyriaWeightedPrompt,
 } from "./core/lyriaRealtime";
+import { getGeminiApiKey, setGeminiApiKey } from "./core/browserLyriaBridge";
 import { importMidiPerformance } from "./core/midiImport";
 import {
   DEFAULT_ONBOARDING_PREFERENCES,
@@ -980,6 +981,16 @@ export function App() {
       }));
     }
   }, []);
+
+  const [geminiApiKeySet, setGeminiApiKeySet] = useState(() => Boolean(getGeminiApiKey()));
+  const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState("");
+  const saveGeminiApiKey = useCallback((key: string) => {
+    setGeminiApiKey(key);
+    setGeminiApiKeySet(Boolean(key.trim()));
+    setGeminiApiKeyDraft("");
+    setNotice(key.trim() ? "Gemini API key saved for this browser." : "Gemini API key removed.");
+    void refreshLyriaRealtimeStatus();
+  }, [refreshLyriaRealtimeStatus]);
 
   const startOrUpdateLyriaRealtime = useCallback(async () => {
     setLyriaRealtimeBusy(true);
@@ -4231,6 +4242,34 @@ export function App() {
                     IMPORT SETTINGS
                     <input type="file" accept=".json,application/json" onChange={(event) => { void importWorkspaceSettings(event.target.files?.[0]); event.target.value = ""; }} />
                   </label>
+                </div>
+              </section>
+              <section className="workspace-settings gemini-key-panel" aria-label="Gemini API key for browser Lyria RealTime">
+                <header><span>LYRIA REALTIME (BROWSER)</span><b className={geminiApiKeySet ? "update-ready" : ""}>{geminiApiKeySet ? "KEY SET" : "NO KEY"}</b></header>
+                <p className="gemini-key-notice">
+                  Optional: paste a Gemini API key to run Lyria RealTime directly from this browser, without the desktop app.
+                  <strong> This key is stored in this browser and used client-side — it is visible to anyone with access to this
+                  device/browser.</strong> Get a free key at{" "}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a>.
+                </p>
+                <div className="workspace-settings-actions">
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="Paste Gemini API key…"
+                    value={geminiApiKeyDraft}
+                    onChange={(event) => setGeminiApiKeyDraft(event.target.value)}
+                    aria-label="Gemini API key"
+                  />
+                  <button type="button" onClick={() => saveGeminiApiKey(geminiApiKeyDraft)} disabled={!geminiApiKeyDraft.trim()}>
+                    SAVE KEY
+                  </button>
+                  {geminiApiKeySet && (
+                    <button type="button" onClick={() => saveGeminiApiKey("")} className="gemini-key-clear">
+                      REMOVE KEY
+                    </button>
+                  )}
                 </div>
               </section>
               <section className="workspace-settings updater-panel" aria-label="Software updates">
