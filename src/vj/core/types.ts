@@ -108,6 +108,7 @@ export interface AudioMetrics {
   waveform: Uint8Array<ArrayBuffer>;
   trackLevels: Record<TrackId, number>;
   masterLevel: number;
+  peakLevel: number;
   beatPhase: number;
   currentStep: number;
   bpm: number;

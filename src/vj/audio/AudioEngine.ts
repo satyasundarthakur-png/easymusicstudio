@@ -1429,9 +1429,12 @@ export class AudioEngine {
     }
 
     let masterEnergy = 0;
+    let peakSample = 0;
     for (const value of this.waveformBuffer) {
       const sample = (value - 128) / 128;
       masterEnergy += sample * sample;
+      const magnitude = Math.abs(sample);
+      if (magnitude > peakSample) peakSample = magnitude;
     }
     const context = this.context;
     const stepSeconds = secondsPerStep(this.bpm);
@@ -1442,6 +1445,7 @@ export class AudioEngine {
       waveform: this.waveformBuffer,
       trackLevels,
       masterLevel: Math.min(1, Math.sqrt(masterEnergy / this.waveformBuffer.length) * 2),
+      peakLevel: Math.min(1, peakSample),
       beatPhase: Math.max(0, beatPhase),
       currentStep: this.audibleStep(),
       bpm: this.bpm,

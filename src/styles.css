@@ -873,6 +873,8 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 9px; height
 .footer-status span { overflow: hidden; color: #7d8797; font: 600 6px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .footer-status small { overflow: hidden; color: #4f5663; font: 500 6px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .footer-visualizer { width: 100%; height: 38px; display: block; }
+.footer-visualizer-expand { width: 100%; min-width: 0; padding: 0; border: none; background: transparent; cursor: pointer; }
+.footer-visualizer-expand:hover .footer-visualizer { opacity: .82; }
 .footer-output { display: grid; grid-template-columns: 82px minmax(96px,1fr); gap: 12px; }
 .output-readout, .master-readout { min-width: 0; display: grid; gap: 4px; }
 .output-readout span, .master-readout span { color: #5e6674; font: 650 6px "DM Mono", monospace; }
@@ -1013,3 +1015,34 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 9px; height
 .midi-learn-clear { width: 22px; height: 22px; padding: 0 !important; border-color: rgba(255,79,134,.3) !important; color: #ff8caf !important; background: rgba(255,79,134,.05) !important; }
 .midi-learn-panel footer { display: flex; justify-content: flex-end; }
 .midi-learn-panel footer button { height: 28px; padding: 0 14px; border: 1px solid rgba(255,79,134,.35); border-radius: 6px; color: #ff8caf; background: rgba(255,79,134,.05); font: 700 7px "DM Mono"; cursor: pointer; }
+
+/* Spectral analyzer panel */
+.spectral-analyzer-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  width: min(760px, calc(100vw - 36px));
+  height: min(460px, calc(100vh - 96px));
+  margin: auto;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(53,220,255,.24);
+  border-radius: 8px;
+  background: rgba(9, 7, 15, .98);
+  box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 38px rgba(53,220,255,.07);
+}
+.spectral-analyzer-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.spectral-analyzer-panel header button[aria-label="Close Spectral Analyzer"] { width: 26px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 5px; color: #9296a1; background: transparent; font: 700 10px "DM Mono"; cursor: pointer; }
+.spectral-view-tabs { display: flex; gap: 6px; }
+.spectral-view-tabs button { height: 26px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; color: #9da1ad; background: rgba(255,255,255,.025); font: 700 7px "DM Mono"; letter-spacing: .08em; cursor: pointer; }
+.spectral-view-tabs button.active { border-color: rgba(53,220,255,.5); color: #041116; background: var(--mint); }
+.spectral-analyzer-canvas { width: 100%; height: 100%; display: block; border-radius: 6px; background: rgba(2,3,6,.6); }
+.spectral-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.spectral-meter { display: grid; grid-template-columns: 44px 1fr 30px; align-items: center; gap: 8px; }
+.spectral-meter-label { color: #777b86; font: 700 7px "DM Mono"; letter-spacing: .08em; }
+.spectral-meter-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.06); overflow: hidden; }
+.spectral-meter-fill { height: 100%; background: linear-gradient(90deg, #35dcff, #75f4c5); transition: width .08s linear; }
+.spectral-meter-fill.danger { background: linear-gradient(90deg, #ffb454, #ff4f86); }
+.spectral-meter-value { color: #b8becb; font: 700 8px "DM Mono"; text-align: right; }

@@ -18,6 +18,7 @@ import { checkForUpdate, downloadAndInstallUpdate, type UpdateInfo } from "./cor
 import { isTauri } from "@tauri-apps/api/core";
 import { ControlRouter, TapTempo, type ControllerStatus } from "./controllers/ControlRouter";
 import { MidiLearnPanel } from "./MidiLearnPanel";
+import { SpectralAnalyzerPanel } from "./SpectralAnalyzerPanel";
 import { createAgentPlan, getAgentStatus, type AgentPlan, type AgentStatus } from "./core/agentProvider";
 import {
   broadcastDjControlState,
@@ -462,6 +463,7 @@ export function App() {
   const [sceneVisualSettings, setSceneVisualSettings] = useState<SceneVisualSettingsMap>(() => sceneVisualSettingsRef.current);
   const [controllerStatus, setControllerStatus] = useState(INITIAL_CONTROLLER_STATUS);
   const [midiLearnOpen, setMidiLearnOpen] = useState(false);
+  const [spectralAnalyzerOpen, setSpectralAnalyzerOpen] = useState(false);
   const [renderStats, setRenderStats] = useState<RenderStats>({ fps: 0, frameTimeMs: 0, pixelRatio: 1, quality: "adaptive" });
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({ available: false, provider: "checking" });
   const [lyriaRealtimeStatus, setLyriaRealtimeStatus] = useState<LyriaRealtimeStatus>({
@@ -3030,6 +3032,7 @@ export function App() {
         />
       )}
       {midiLearnOpen && <MidiLearnPanel router={routerRef.current} onClose={() => setMidiLearnOpen(false)} />}
+      {spectralAnalyzerOpen && <SpectralAnalyzerPanel audio={engineRef.current} onClose={() => setSpectralAnalyzerOpen(false)} />}
       {lyriaGuidanceDialog && (
         <div
           className="lyria-guidance-overlay"
@@ -4227,7 +4230,15 @@ export function App() {
           <span>{activeLyriaStyle.label} · {snapshot.bpm} BPM · {lyriaSession ? "LYRIA LIVE" : "READY"}</span>
           <small title={notice}>{notice}</small>
         </div>
-        <FooterAudioVisualizer audio={engineRef.current} />
+        <button
+          type="button"
+          className="footer-visualizer-expand"
+          onClick={() => setSpectralAnalyzerOpen(true)}
+          aria-label="Open full spectral analyzer"
+          title="Open spectral analyzer"
+        >
+          <FooterAudioVisualizer audio={engineRef.current} />
+        </button>
         <div className="footer-output">
           <div className="output-readout"><span>OUTPUT</span><b>{renderStats.fps || 60} FPS · 16:9</b></div>
           <div className="master-readout"><span>MASTER</span><i><em style={{ width: `${Math.round(snapshot.masterVolume * 100)}%` }} /></i><b>{Math.round(snapshot.masterVolume * 100)}%</b></div>
