@@ -3001,7 +3001,7 @@ export function App() {
   // online — so a broker failure is readable rather than dumping the user onto a
   // disabled Start Session. Success auto-dismisses; failure holds so the log can
   // be read, then the user continues without audio.
-  const showAssistGate = !assistGateSkipped && (
+  const showAssistGate = isTauri() && !assistGateSkipped && (
     !assistStatus.signedIn
     || lyriaActivation === "working"
     || (lyriaActivation === "done" && !lyriaRealtimeStatus.available)
