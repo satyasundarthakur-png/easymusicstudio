@@ -17,6 +17,7 @@ import { AssistGate, type AssistGateLogEntry } from "./AssistGate";
 import { checkForUpdate, downloadAndInstallUpdate, type UpdateInfo } from "./core/updater";
 import { isTauri } from "@tauri-apps/api/core";
 import { ControlRouter, TapTempo, type ControllerStatus } from "./controllers/ControlRouter";
+import { MidiLearnPanel } from "./MidiLearnPanel";
 import { createAgentPlan, getAgentStatus, type AgentPlan, type AgentStatus } from "./core/agentProvider";
 import {
   broadcastDjControlState,
@@ -460,6 +461,7 @@ export function App() {
   const [visualColorControls, setVisualColorControls] = useState<VisualColorControls>({ ...DEFAULT_VISUAL_COLOR_CONTROLS });
   const [sceneVisualSettings, setSceneVisualSettings] = useState<SceneVisualSettingsMap>(() => sceneVisualSettingsRef.current);
   const [controllerStatus, setControllerStatus] = useState(INITIAL_CONTROLLER_STATUS);
+  const [midiLearnOpen, setMidiLearnOpen] = useState(false);
   const [renderStats, setRenderStats] = useState<RenderStats>({ fps: 0, frameTimeMs: 0, pixelRatio: 1, quality: "adaptive" });
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({ available: false, provider: "checking" });
   const [lyriaRealtimeStatus, setLyriaRealtimeStatus] = useState<LyriaRealtimeStatus>({
@@ -3027,6 +3029,7 @@ export function App() {
           onClose={() => setOnboardingView(undefined)}
         />
       )}
+      {midiLearnOpen && <MidiLearnPanel router={routerRef.current} onClose={() => setMidiLearnOpen(false)} />}
       {lyriaGuidanceDialog && (
         <div
           className="lyria-guidance-overlay"
@@ -3265,6 +3268,15 @@ export function App() {
           <span className={`device-pill ${controllerStatus.midi ? "online" : ""}`} title={controllerStatus.midiInputs.join(", ") || "No MIDI input detected"}>
             <i /> MIDI {controllerStatus.midi ? `${controllerStatus.midiInputs.length} IN` : "READY"}
           </span>
+          <button
+            className="top-settings-button"
+            type="button"
+            onClick={() => setMidiLearnOpen(true)}
+            aria-label="Open MIDI Learn"
+            title="MIDI Learn"
+          >
+            <Settings2 size={14} />
+          </button>
           <span className={`device-pill ${controllerStatus.logitechBridge ? "online" : ""}`}>
             <i /> MX CONSOLE {controllerStatus.logitechBridge ? "LIVE" : "READY"}
           </span>

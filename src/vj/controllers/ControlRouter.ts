@@ -14,6 +14,82 @@ export interface ControllerStatus {
 type ControlListener = (message: ControlMessage) => void;
 type StatusListener = (status: ControllerStatus) => void;
 
+/// MIDI-learn: actions a note-on message can be bound to (fired once per
+/// press, no meaningful continuous value).
+export const MIDI_LEARNABLE_NOTE_ACTIONS: ControlAction[] = [
+  "transport.toggle",
+  "transport.stop",
+  "transport.record",
+  "tempo.tap",
+  "track.next",
+  "track.previous",
+  "track.mute",
+  "track.solo",
+  "track.trigger",
+  "visual.next",
+  "visual.previous",
+];
+
+/// MIDI-learn: actions a control-change (fader/knob) message can be bound
+/// to (continuous, normalized to roughly -1..1 around center).
+export const MIDI_LEARNABLE_CC_ACTIONS: ControlAction[] = [
+  "master.delta",
+  "visual.intensity.delta",
+  "tempo.delta",
+  "visual.sculpture.delta",
+  "visual.motion.delta",
+  "visual.atmosphere.delta",
+  "visual.ribbon.delta",
+  "visual.temporal.speed.delta",
+  "visual.temporal.strobe.delta",
+  "visual.temporal.trail.delta",
+  "visual.temporal.morph.delta",
+  "visual.temporal.camera.delta",
+  "visual.temporal.phase.delta",
+];
+
+export interface MidiMapping {
+  kind: "note" | "cc";
+  key: number;
+  action: ControlAction;
+}
+
+export interface MidiLearnEvent {
+  action: ControlAction;
+  kind: "note" | "cc";
+  key: number;
+}
+
+type LearnListener = (event: MidiLearnEvent) => void;
+
+const MIDI_MAPPINGS_STORAGE_KEY = "vj-studio.midi.mappings.v1";
+
+function loadCustomMidiMappings(): MidiMapping[] {
+  try {
+    const raw = localStorage.getItem(MIDI_MAPPINGS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (entry): entry is MidiMapping =>
+        entry &&
+        (entry.kind === "note" || entry.kind === "cc") &&
+        typeof entry.key === "number" &&
+        typeof entry.action === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomMidiMappings(mappings: MidiMapping[]): void {
+  try {
+    localStorage.setItem(MIDI_MAPPINGS_STORAGE_KEY, JSON.stringify(mappings));
+  } catch {
+    // Storage unavailable (private browsing, quota) — mappings stay in-memory for this session.
+  }
+}
+
 const KEYBOARD_ACTIONS: Record<string, { action: ControlAction; value?: number }> = {
   Space: { action: "transport.toggle" },
   MediaPlayPause: { action: "transport.toggle" },
@@ -65,6 +141,7 @@ const GLOBAL_SHORTCUTS: Array<[string, ControlAction, number?]> = [
 export class ControlRouter {
   private controlListeners = new Set<ControlListener>();
   private statusListeners = new Set<StatusListener>();
+  private learnListeners = new Set<LearnListener>();
   private unlistenBridge?: UnlistenFn;
   private webMidiStarted = false;
   private started = false;
@@ -76,6 +153,81 @@ export class ControlRouter {
     midi: false,
     midiInputs: [],
   };
+
+  private customMappings: MidiMapping[] = loadCustomMidiMappings();
+  private noteMap = new Map<number, ControlAction>();
+  private ccMap = new Map<number, ControlAction>();
+  private learnTarget: { kind: "note" | "cc"; action: ControlAction } | null = null;
+
+  constructor() {
+    this.rebuildMaps();
+  }
+
+  private rebuildMaps(): void {
+    this.noteMap.clear();
+    this.ccMap.clear();
+    for (const mapping of this.customMappings) {
+      if (mapping.kind === "note") this.noteMap.set(mapping.key, mapping.action);
+      else this.ccMap.set(mapping.key, mapping.action);
+    }
+  }
+
+  /// Enters MIDI-learn mode for a given action: the next matching MIDI
+  /// message (note-on for note-learnable actions, control-change for
+  /// CC-learnable actions) is captured and bound, instead of being
+  /// dispatched as a normal control message. Call cancelMidiLearn() to
+  /// back out without binding anything.
+  startMidiLearn(action: ControlAction): void {
+    const kind: "note" | "cc" = MIDI_LEARNABLE_CC_ACTIONS.includes(action) ? "cc" : "note";
+    this.learnTarget = { kind, action };
+  }
+
+  cancelMidiLearn(): void {
+    this.learnTarget = null;
+  }
+
+  isMidiLearning(): boolean {
+    return this.learnTarget !== null;
+  }
+
+  /// Removes any custom binding(s) pointing at this action, reverting it
+  /// to the fixed default (or to unbound, if it had no default).
+  clearMidiMapping(action: ControlAction): void {
+    this.customMappings = this.customMappings.filter((mapping) => mapping.action !== action);
+    this.rebuildMaps();
+    saveCustomMidiMappings(this.customMappings);
+  }
+
+  clearAllMidiMappings(): void {
+    this.customMappings = [];
+    this.rebuildMaps();
+    saveCustomMidiMappings(this.customMappings);
+  }
+
+  getMidiMappings(): MidiMapping[] {
+    return [...this.customMappings];
+  }
+
+  subscribeMidiLearn(listener: LearnListener): () => void {
+    this.learnListeners.add(listener);
+    return () => this.learnListeners.delete(listener);
+  }
+
+  private emitLearned(event: MidiLearnEvent): void {
+    for (const listener of this.learnListeners) listener(event);
+  }
+
+  private bindMidiLearnCapture(kind: "note" | "cc", key: number): boolean {
+    if (!this.learnTarget || this.learnTarget.kind !== kind) return false;
+    const { action } = this.learnTarget;
+    this.customMappings = this.customMappings.filter((mapping) => mapping.action !== action);
+    this.customMappings.push({ kind, key, action });
+    this.rebuildMaps();
+    saveCustomMidiMappings(this.customMappings);
+    this.learnTarget = null;
+    this.emitLearned({ action, kind, key });
+    return true;
+  }
 
   start(): Promise<void> {
     const operation = this.lifecycle.then(() => this.startNow());
@@ -229,6 +381,14 @@ export class ControlRouter {
 
   private onMidiNote(key: number, velocity: number): void {
     if (velocity <= 0) return;
+    if (this.bindMidiLearnCapture("note", key)) return;
+
+    const learned = this.noteMap.get(key);
+    if (learned) {
+      this.dispatch(learned, 0, "midi");
+      return;
+    }
+
     if (key >= 36 && key <= 41) this.dispatch("track.trigger", key - 36, "midi");
     else if (key === 42) this.dispatch("transport.toggle", 0, "midi");
     else if (key === 43) this.dispatch("transport.record", 0, "midi");
@@ -237,7 +397,15 @@ export class ControlRouter {
   }
 
   private onMidiControl(key: number, value: number): void {
+    if (this.bindMidiLearnCapture("cc", key)) return;
+
     const normalized = (value - 64) / 63;
+    const learned = this.ccMap.get(key);
+    if (learned) {
+      this.dispatch(learned, normalized, "midi");
+      return;
+    }
+
     if (key === 1) this.dispatch("master.delta", normalized, "midi");
     if (key === 2) this.dispatch("visual.intensity.delta", normalized, "midi");
     if (key === 3) this.dispatch("tempo.delta", normalized, "midi");
