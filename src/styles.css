@@ -508,6 +508,9 @@ body {
 .loop-pad label input { display: none; }
 .loop-pad.playing { border-color: rgba(117,244,197,.55); background: rgba(117,244,197,.08); }
 .loop-pad.playing button { color: var(--mint); }
+.loop-pad.pad-loading button { color: #ffb454; }
+.loop-pad.pad-loading { border-color: rgba(255,180,84,.5); background: rgba(255,180,84,.06); }
+.loop-pad[data-drag-active], .loop-pad.drag-active { border-color: rgba(53,220,255,.8); background: rgba(53,220,255,.12); box-shadow: 0 0 0 1px rgba(53,220,255,.3) inset; }
 .fx-row { display: grid; gap: 6px; }
 .fx-row.locked .control-block b { color: #ffd27f; }
 .fx-row-main { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto; align-items: center; gap: 7px; }
@@ -873,8 +876,23 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 9px; height
 .footer-status span { overflow: hidden; color: #7d8797; font: 600 6px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .footer-status small { overflow: hidden; color: #4f5663; font: 500 6px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .footer-visualizer { width: 100%; height: 38px; display: block; }
-.footer-visualizer-expand { width: 100%; min-width: 0; padding: 0; border: none; background: transparent; cursor: pointer; }
+.footer-visualizer-expand { position: relative; width: 100%; min-width: 0; padding: 0; border: none; background: transparent; cursor: pointer; }
 .footer-visualizer-expand:hover .footer-visualizer { opacity: .82; }
+.footer-visualizer-expand-icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(4,7,11,.85);
+  color: #6c7280;
+  opacity: 0;
+  transition: opacity .12s ease, color .12s ease;
+}
+.footer-visualizer-expand:hover .footer-visualizer-expand-icon { opacity: 1; color: var(--mint); }
 .footer-output { display: grid; grid-template-columns: 82px minmax(96px,1fr); gap: 12px; }
 .output-readout, .master-readout { min-width: 0; display: grid; gap: 4px; }
 .output-readout span, .master-readout span { color: #5e6674; font: 650 6px "DM Mono", monospace; }

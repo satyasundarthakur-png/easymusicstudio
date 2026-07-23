@@ -656,6 +656,8 @@ export function App() {
   }, [changeMasterEffect, fxLocks, fxMood, fxMoodBusy, stopFxMood]);
 
   const [padLoops, setPadLoops] = useState(() => engineRef.current.getPadLoops());
+  const [padLoadingSlot, setPadLoadingSlot] = useState<number | null>(null);
+  const [padDragOverSlot, setPadDragOverSlot] = useState<number | null>(null);
   const [sfxLevel, setSfxLevel] = useState(() => engineRef.current.getSfxLevel());
 
   const changeSfxLevel = useCallback((level: number) => {
@@ -669,6 +671,7 @@ export function App() {
 
   const loadPadLoopFile = useCallback(async (slot: number, file?: File) => {
     if (!file) return;
+    setPadLoadingSlot(slot);
     try {
       if (!/\.(?:mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name)) throw new Error("Choose an MP3, WAV, M4A, AAC, OGG, or FLAC file");
       await engineRef.current.loadPadLoop(slot, await file.arrayBuffer(), file.name.replace(/\.[^.]+$/, ""));
@@ -676,6 +679,8 @@ export function App() {
       setNotice(`${file.name} loaded into loop pad ${slot + 1}. Tap the pad to start it on the next bar.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load loop audio");
+    } finally {
+      setPadLoadingSlot((current) => (current === slot ? null : current));
     }
   }, []);
 
@@ -3571,16 +3576,33 @@ export function App() {
               <div className="loop-pads" role="group" aria-label="Audio loop pads">
                 <span className="pads-label">LOOPS</span>
                 {padLoops.map((pad) => (
-                  <span key={pad.slot} className={`loop-pad ${pad.playing ? "playing" : ""} ${pad.name ? "loaded" : ""}`}>
+                  <span
+                    key={pad.slot}
+                    className={`loop-pad ${pad.playing ? "playing" : ""} ${pad.name ? "loaded" : ""} ${padLoadingSlot === pad.slot ? "pad-loading" : ""} ${padDragOverSlot === pad.slot ? "drag-active" : ""}`}
+                    onDragEnter={(event) => {
+                      event.preventDefault();
+                      setPadDragOverSlot(pad.slot);
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDragLeave={() => setPadDragOverSlot((current) => (current === pad.slot ? null : current))}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setPadDragOverSlot(null);
+                      void loadPadLoopFile(pad.slot, event.dataTransfer.files?.[0]);
+                    }}
+                  >
                     <button
                       type="button"
                       onClick={() => togglePadLoop(pad.slot)}
-                      disabled={!pad.name}
-                      title={pad.name ? `${pad.playing ? "Stop" : "Start"} ${pad.name} (bar-synced)` : "Load an audio file first"}
+                      disabled={!pad.name || padLoadingSlot === pad.slot}
+                      title={pad.name ? `${pad.playing ? "Stop" : "Start"} ${pad.name} (bar-synced)` : "Load an audio file first, or drag one onto this pad"}
                     >
-                      {pad.name ? (pad.playing ? `■ ${pad.name}` : `▶ ${pad.name}`) : `PAD ${pad.slot + 1}`}
+                      {padLoadingSlot === pad.slot ? "LOADING…" : pad.name ? (pad.playing ? `■ ${pad.name}` : `▶ ${pad.name}`) : `PAD ${pad.slot + 1}`}
                     </button>
-                    <label title="Load MP3/WAV/M4A loop into this pad" aria-label={`Load audio into pad ${pad.slot + 1}`}>
+                    <label title="Load MP3/WAV/M4A loop into this pad, or drag a file onto the pad" aria-label={`Load audio into pad ${pad.slot + 1}`}>
                       +
                       <input type="file" accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,audio/*" onChange={(event) => { void loadPadLoopFile(pad.slot, event.target.files?.[0]); event.target.value = ""; }} />
                     </label>
@@ -4238,6 +4260,9 @@ export function App() {
           title="Open spectral analyzer"
         >
           <FooterAudioVisualizer audio={engineRef.current} />
+          <span className="footer-visualizer-expand-icon">
+            <Maximize2 size={12} />
+          </span>
         </button>
         <div className="footer-output">
           <div className="output-readout"><span>OUTPUT</span><b>{renderStats.fps || 60} FPS · 16:9</b></div>

@@ -64,6 +64,22 @@ export function MidiLearnPanel({ router, onClose }: MidiLearnPanelProps) {
     };
   }, [router]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      // If we're mid-learn, Escape cancels the capture first; a second
+      // Escape (or one when not learning) closes the whole panel.
+      if (learning) {
+        router.cancelMidiLearn();
+        setLearning(null);
+        return;
+      }
+      onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [learning, onClose, router]);
+
   const mappingFor = (action: ControlAction): MidiMapping | undefined => mappings.find((m) => m.action === action);
 
   const beginLearn = (action: ControlAction) => {
