@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Maximize2, Minimize2, Settings2 } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Settings2 } from "lucide-react";
 import {
   AudioEngine,
   createEngineSnapshotFromTemplate,
@@ -3252,6 +3252,19 @@ export function App() {
         </div>
 
         <div className="top-actions">
+          <button
+            className="top-settings-button"
+            type="button"
+            onClick={() => {
+              if (snapshotRef.current.playing) void stopTransportAndRealtime();
+              setOnboardingFirstRun(false);
+              setOnboardingView("welcome");
+            }}
+            aria-label="Back to welcome screen"
+            title="Back to welcome screen"
+          >
+            <ArrowLeft size={16} />
+          </button>
           <button
             className="top-settings-button"
             type="button"
