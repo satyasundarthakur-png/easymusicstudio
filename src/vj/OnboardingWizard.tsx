@@ -22,6 +22,8 @@ interface OnboardingWizardProps {
   preferences: OnboardingPreferences;
   lyriaAvailable: boolean;
   lyriaStatusLabel: string;
+  hasGeminiKey?: boolean;
+  onSaveGeminiKey?: (key: string) => void;
   assist?: { signedIn: boolean; pending: boolean; account?: string };
   onAssistSignIn?: () => void;
   onChange: (preferences: OnboardingPreferences) => void;
@@ -255,6 +257,8 @@ export function OnboardingWizard({
   preferences,
   lyriaAvailable,
   lyriaStatusLabel,
+  hasGeminiKey,
+  onSaveGeminiKey,
   assist,
   onAssistSignIn,
   onChange,
@@ -266,6 +270,7 @@ export function OnboardingWizard({
   const [busy, setBusy] = useState(false);
   const [previewingStyleId, setPreviewingStyleId] = useState<string>();
   const [previewErrorStyleId, setPreviewErrorStyleId] = useState<string>();
+  const [geminiKeyDraft, setGeminiKeyDraft] = useState("");
   const previewAudioRef = useRef<HTMLAudioElement | undefined>(undefined);
   const loadingAudioRef = useRef<HTMLAudioElement | undefined>(undefined);
   const introChimePlayedRef = useRef(false);
@@ -368,6 +373,36 @@ export function OnboardingWizard({
               </button>
             </div>
             {!lyriaAvailable && <button className="enter-without-audio" type="button" onClick={() => void launch(false)}>ENTER WITHOUT AUDIO</button>}
+            {!lyriaAvailable && !hasGeminiKey && onSaveGeminiKey && (
+              <div className="welcome-gemini-key">
+                <p>
+                  Start Session needs Lyria RealTime. Add a free Gemini API key to run it right in this browser —
+                  get one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a>.
+                </p>
+                <div className="welcome-gemini-key-row">
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="Paste Gemini API key…"
+                    value={geminiKeyDraft}
+                    onChange={(event) => setGeminiKeyDraft(event.target.value)}
+                    aria-label="Gemini API key"
+                  />
+                  <button
+                    type="button"
+                    disabled={!geminiKeyDraft.trim()}
+                    onClick={() => {
+                      onSaveGeminiKey(geminiKeyDraft);
+                      setGeminiKeyDraft("");
+                    }}
+                  >
+                    SAVE KEY
+                  </button>
+                </div>
+                <small>Stored in this browser only — visible to anyone with access to this device.</small>
+              </div>
+            )}
           </div>
           <div className="welcome-capabilities" aria-label="VJ Studio capabilities">
             <div><Zap size={18} /><span>REALTIME AI</span></div>

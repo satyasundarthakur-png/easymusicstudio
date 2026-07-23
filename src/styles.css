@@ -223,6 +223,14 @@ body {
 .welcome-actions .launch:hover:not(:disabled) { animation-play-state: paused; transform: translateY(-1px); box-shadow: 0 16px 36px rgba(123,110,255,.38); }
 .welcome-actions .launch:disabled { opacity: .5; cursor: wait; }
 .enter-without-audio { margin-top: 14px; border: 0; background: transparent; color: #818796; font: 600 8px "DM Mono", monospace; text-decoration: underline; cursor: pointer; }
+.welcome-gemini-key { margin-top: 18px; padding: 14px 16px; border: 1px solid rgba(255,180,84,.28); border-radius: 12px; background: rgba(255,180,84,.05); text-align: left; }
+.welcome-gemini-key p { margin: 0 0 10px; color: #cbb896; font: 500 11px/1.5 "Space Grotesk", sans-serif; }
+.welcome-gemini-key p a { color: #ffcf8a; }
+.welcome-gemini-key-row { display: flex; gap: 8px; }
+.welcome-gemini-key-row input { flex: 1; height: 36px; padding: 0 10px; border: 1px solid rgba(255,180,84,.3); border-radius: 8px; background: rgba(0,0,0,.3); color: #f2ede4; font: 600 11px "DM Mono", monospace; }
+.welcome-gemini-key-row button { height: 36px; padding: 0 14px; border: 1px solid rgba(255,180,84,.4); border-radius: 8px; background: rgba(255,180,84,.12); color: #ffcf8a; font: 700 9px "DM Mono", monospace; cursor: pointer; white-space: nowrap; }
+.welcome-gemini-key-row button:disabled { opacity: .4; cursor: default; }
+.welcome-gemini-key small { display: block; margin-top: 8px; color: #7d7563; font: 500 8px/1.4 "DM Mono", monospace; }
 .welcome-capabilities { width: min(570px, 100%); display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 34px; column-gap: 6px; }
 .welcome-capabilities div { min-height: 54px; display: grid; place-items: center; align-content: center; gap: 9px; color: #35dcff; animation: welcome-rise .5s cubic-bezier(.16,.84,.44,1) both; }
 .welcome-capabilities div:nth-child(1) { animation-delay: .3s; }

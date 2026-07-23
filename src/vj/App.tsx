@@ -3039,6 +3039,8 @@ export function App() {
           preferences={onboardingPreferences}
           lyriaAvailable={lyriaRealtimeStatus.available}
           lyriaStatusLabel={lyriaRealtimeStatus.available ? "LYRIA REALTIME READY" : lyriaRealtimeStatus.provider === "checking" ? "CHECKING LYRIA" : lyriaRealtimeStatus.reason ? `LYRIA OFFLINE · ${lyriaRealtimeStatus.reason.toUpperCase()}` : "LYRIA OFFLINE"}
+          hasGeminiKey={geminiApiKeySet}
+          onSaveGeminiKey={saveGeminiApiKey}
           onChange={setOnboardingPreferences}
           assist={{ signedIn: assistStatus.signedIn, pending: assistStatus.pending, account: assistStatus.account }}
           onAssistSignIn={() => void handleAssistSignIn()}
