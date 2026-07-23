@@ -1079,3 +1079,18 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 9px; height
 .spectral-meter-fill { height: 100%; background: linear-gradient(90deg, #35dcff, #75f4c5); transition: width .08s linear; }
 .spectral-meter-fill.danger { background: linear-gradient(90deg, #ffb454, #ff4f86); }
 .spectral-meter-value { color: #b8becb; font: 700 8px "DM Mono"; text-align: right; }
+
+/* Fuse your track panel */
+.fuse-panel { display: grid; gap: 10px; }
+.fuse-hint { margin: 0; color: #8d929d; font: 500 9px/1.5 "DM Mono", monospace; }
+.fuse-controls { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+.fuse-controls select { height: 32px; border: 1px solid rgba(53,220,255,.24); border-radius: 6px; background: rgba(53,220,255,.04); color: #9debf6; font: 700 8px "DM Mono", monospace; }
+.fuse-upload { height: 32px; display: grid; place-items: center; border: 1px solid rgba(53,220,255,.24); border-radius: 6px; background: rgba(53,220,255,.04); color: #9debf6; font: 700 8px "DM Mono", monospace; cursor: pointer; }
+.fuse-upload:hover { border-color: rgba(53,220,255,.5); }
+.fuse-upload.busy { opacity: .6; cursor: wait; }
+.fuse-upload input { display: none; }
+.fuse-result { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid rgba(117,244,197,.24); border-radius: 8px; background: rgba(117,244,197,.05); }
+.fuse-result span { color: #cfe9de; font: 600 8px "DM Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fuse-apply { height: 26px; padding: 0 12px; border: 1px solid rgba(117,244,197,.4); border-radius: 6px; background: rgba(117,244,197,.12); color: #86f4cb; font: 700 8px "DM Mono", monospace; cursor: pointer; white-space: nowrap; }
+.fuse-apply:hover:not(:disabled) { border-color: rgba(117,244,197,.7); }
+.fuse-apply:disabled { opacity: .4; cursor: default; }

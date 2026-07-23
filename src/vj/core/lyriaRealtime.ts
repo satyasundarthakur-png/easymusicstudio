@@ -829,3 +829,56 @@ export async function pollLyriaRealtimeAudio(deck: LyriaRealtimeDeckId = "main")
   }
   return invoke<LyriaRealtimeAudioPoll>("lyria_realtime_poll_audio", { deck });
 }
+
+// ---------------------------------------------------------------------------
+// Fusion helpers: map a detected musical key (from local audio analysis,
+// e.g. "F# minor") onto Lyria's relative major/minor Scale enum, and clamp a
+// detected BPM into Lyria's supported [60, 200] range by octave-doubling —
+// so an uploaded song's tempo/key can be pushed into a live Lyria RealTime
+// session to "fuse" the AI generation with it.
+// ---------------------------------------------------------------------------
+
+const PITCH_CLASS_TO_MAJOR_SCALE: LyriaRealtimeScale[] = [
+  "C_MAJOR_A_MINOR", // C
+  "D_FLAT_MAJOR_B_FLAT_MINOR", // C#/Db
+  "D_MAJOR_B_MINOR", // D
+  "E_FLAT_MAJOR_C_MINOR", // D#/Eb
+  "E_MAJOR_D_FLAT_MINOR", // E
+  "F_MAJOR_D_MINOR", // F
+  "G_FLAT_MAJOR_E_FLAT_MINOR", // F#/Gb
+  "G_MAJOR_E_MINOR", // G
+  "A_FLAT_MAJOR_F_MINOR", // G#/Ab
+  "A_MAJOR_G_FLAT_MINOR", // A
+  "B_FLAT_MAJOR_G_MINOR", // A#/Bb
+  "B_MAJOR_A_FLAT_MINOR", // B
+];
+
+const PITCH_CLASS_NAME_TO_INDEX: Record<string, number> = {
+  C: 0, "C#": 1, DB: 1, D: 2, "D#": 3, EB: 3, E: 4, F: 5, "F#": 6, GB: 6,
+  G: 7, "G#": 8, AB: 8, A: 9, "A#": 10, BB: 10, B: 11,
+};
+
+/**
+ * Converts a detected key string like "F# minor" or "C major" (as produced
+ * by audioAnalysis's key estimator) into the matching Lyria RealTime Scale
+ * enum value. Returns undefined if the string can't be parsed.
+ */
+export function detectedKeyToLyriaScale(key: string | null | undefined): LyriaRealtimeScale | undefined {
+  if (!key) return undefined;
+  const match = /^([A-Ga-g])([#b]?)\s*(major|minor)$/.exec(key.trim());
+  if (!match) return undefined;
+  const [, letter, accidental, mode] = match;
+  const name = `${letter.toUpperCase()}${accidental === "b" ? "B" : accidental === "#" ? "#" : ""}`;
+  const pitchClass = PITCH_CLASS_NAME_TO_INDEX[name];
+  if (pitchClass === undefined) return undefined;
+  const majorRootIndex = mode.toLowerCase() === "minor" ? (pitchClass + 3) % 12 : pitchClass;
+  return PITCH_CLASS_TO_MAJOR_SCALE[majorRootIndex];
+}
+
+/** Doubles/halves a detected BPM until it fits Lyria's supported [60, 200] range. */
+export function clampBpmToLyriaRange(bpm: number): number {
+  let value = bpm;
+  while (value < 60 && value > 0) value *= 2;
+  while (value > 200) value /= 2;
+  return Math.round(Math.min(200, Math.max(60, value)));
+}

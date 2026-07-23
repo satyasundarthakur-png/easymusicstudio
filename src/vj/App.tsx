@@ -71,12 +71,15 @@ import {
   startLyriaRealtime,
   stopLyriaRealtime,
   updateLyriaRealtime,
+  detectedKeyToLyriaScale,
+  clampBpmToLyriaRange,
   type LyriaRealtimeConfig,
   type LyriaRealtimeDeckId,
   type LyriaRealtimeRequest,
   type LyriaRealtimeSession,
   type LyriaRealtimeStylePreset,
   type LyriaRealtimeStatus,
+  type LyriaRealtimeScale,
   type LyriaWeightedPrompt,
 } from "./core/lyriaRealtime";
 import { getGeminiApiKey, setGeminiApiKey } from "./core/browserLyriaBridge";
@@ -233,6 +236,7 @@ type StudioPanelId =
   | "visual-temporal"
   | "visual-advanced"
   | "audio-lyria"
+  | "audio-fuse"
   | "audio-fx"
   | "assist-ai"
   | "audio-templates"
@@ -1038,6 +1042,51 @@ export function App() {
       setLyriaRealtimeBusy(false);
     }
   }, [lyriaSession]);
+
+  const [fuseTargetTrack, setFuseTargetTrack] = useState<TrackId>("voice");
+  const [fuseBusy, setFuseBusy] = useState(false);
+  const [fuseAnalysis, setFuseAnalysis] = useState<{
+    trackId: TrackId;
+    fileName: string;
+    bpm: number | null;
+    key: string | null;
+    scale: LyriaRealtimeScale | undefined;
+  } | undefined>(undefined);
+
+  const handleFuseUpload = useCallback(async (file?: File) => {
+    if (!file) return;
+    setFuseBusy(true);
+    try {
+      const loaded = await engineRef.current.loadAudioFile(fuseTargetTrack, await file.arrayBuffer(), file.name, { loop: true });
+      const scale = detectedKeyToLyriaScale(loaded.analysis.key);
+      setFuseAnalysis({
+        trackId: fuseTargetTrack,
+        fileName: file.name,
+        bpm: loaded.analysis.bpm,
+        key: loaded.analysis.key,
+        scale,
+      });
+      const measuredBpm = loaded.analysis.bpm === null ? "tempo unconfirmed" : `${loaded.analysis.bpm.toFixed(1)} BPM`;
+      setNotice(`${file.name} loaded into ${fuseTargetTrack}: ${measuredBpm} · ${loaded.analysis.key ?? "key unconfirmed"}. Ready to fuse with Lyria.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not analyze that file");
+    } finally {
+      setFuseBusy(false);
+    }
+  }, [fuseTargetTrack]);
+
+  const fuseWithLyria = useCallback(async () => {
+    if (!fuseAnalysis) return;
+    const nextConfig: LyriaRealtimeConfig = {
+      ...realtimeRequest.config,
+      bpm: fuseAnalysis.bpm !== null ? clampBpmToLyriaRange(fuseAnalysis.bpm) : realtimeRequest.config.bpm,
+      scale: fuseAnalysis.scale ?? realtimeRequest.config.scale,
+    };
+    await applyRealtimeRequest(
+      { weightedPrompts: realtimeRequest.weightedPrompts, config: nextConfig },
+      `Fused with ${fuseAnalysis.fileName}`,
+    );
+  }, [applyRealtimeRequest, fuseAnalysis, realtimeRequest]);
 
   const applyRealtimeStyle = useCallback(async (styleId: string) => {
     setActiveLyriaDeckSceneId(undefined);
@@ -3855,6 +3904,51 @@ export function App() {
               {!lyriaRealtimeStatus.available && <small>{lyriaRealtimeStatus.reason ?? "Desktop Lyria RealTime bridge is not configured"}</small>}
             </section>
           ), "primary-panel")}
+
+          {renderStudioPanel("audio-fuse", "FUSE YOUR TRACK", fuseAnalysis ? `${fuseAnalysis.trackId.toUpperCase()} · ${fuseAnalysis.bpm ? `${Math.round(fuseAnalysis.bpm)} BPM` : "NO TEMPO"}` : "NO TRACK", (
+            <section className="fuse-panel" aria-label="Fuse your own song or voice with Lyria">
+              <p className="fuse-hint">
+                Upload your own song or a voice recording, then match Lyria's tempo and key to it — a smarter
+                blend than just playing both at once.
+              </p>
+              <div className="fuse-controls">
+                <select
+                  value={fuseTargetTrack}
+                  onChange={(event) => setFuseTargetTrack(event.target.value as TrackId)}
+                  aria-label="Track slot for the uploaded file"
+                >
+                  {TRACK_IDS.map((id) => (
+                    <option key={id} value={id}>{id.toUpperCase()}</option>
+                  ))}
+                </select>
+                <label className={fuseBusy ? "fuse-upload busy" : "fuse-upload"} title="Upload a song or voice recording to analyze and fuse">
+                  {fuseBusy ? "ANALYZING…" : "UPLOAD TO FUSE"}
+                  <input
+                    type="file"
+                    accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,audio/*"
+                    disabled={fuseBusy}
+                    onChange={(event) => { void handleFuseUpload(event.target.files?.[0]); event.target.value = ""; }}
+                  />
+                </label>
+              </div>
+              {fuseAnalysis && (
+                <div className="fuse-result">
+                  <span>{fuseAnalysis.fileName}</span>
+                  <span>{fuseAnalysis.bpm !== null ? `${fuseAnalysis.bpm.toFixed(1)} BPM` : "tempo unconfirmed"}</span>
+                  <span>{fuseAnalysis.key ?? "key unconfirmed"}</span>
+                  <button
+                    type="button"
+                    className="fuse-apply"
+                    onClick={() => void fuseWithLyria()}
+                    disabled={lyriaRealtimeBusy || (fuseAnalysis.bpm === null && !fuseAnalysis.scale)}
+                    title="Match Lyria RealTime's tempo and key to this track"
+                  >
+                    FUSE WITH LYRIA
+                  </button>
+                </div>
+              )}
+            </section>
+          ))}
 
           {renderStudioPanel("audio-fx", "STREAM FX", Object.values(masterEffects).some((amount) => amount > 0.01) ? "ACTIVE" : "DRY", (
             <section className="master-fx" aria-label="Master stream effects">
