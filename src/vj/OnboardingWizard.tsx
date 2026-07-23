@@ -28,7 +28,7 @@ interface OnboardingWizardProps {
   onAssistSignIn?: () => void;
   onChange: (preferences: OnboardingPreferences) => void;
   onEdit: () => void;
-  onLaunch: (preferences: OnboardingPreferences, includeWelcomeCue: boolean) => Promise<void>;
+  onLaunch: (preferences: OnboardingPreferences, includeWelcomeCue: boolean, enterStudio?: boolean) => Promise<void>;
   onClose?: () => void;
 }
 
@@ -339,12 +339,12 @@ export function OnboardingWizard({
     loadingAudioRef.current?.pause();
     loadingAudioRef.current = undefined;
   }, []);
-  const launch = async (includeWelcomeCue: boolean) => {
+  const launch = async (includeWelcomeCue: boolean, enterStudio?: boolean) => {
     stopPreview();
     startLoadingSound();
     setBusy(true);
     try {
-      await onLaunch(preferences, includeWelcomeCue);
+      await onLaunch(preferences, includeWelcomeCue, enterStudio);
     } finally {
       if (includeWelcomeCue) stopLoadingSound();
       setBusy(false);
@@ -372,7 +372,7 @@ export function OnboardingWizard({
                 {busy ? <Volume2 size={17} /> : <AudioLines size={17} />} {busy ? "CONNECTING LYRIA" : "START SESSION"}
               </button>
             </div>
-            {!lyriaAvailable && <button className="enter-without-audio" type="button" onClick={() => void launch(false)}>ENTER WITHOUT AUDIO</button>}
+            {!lyriaAvailable && <button className="enter-without-audio" type="button" onClick={() => void launch(false, true)}>ENTER WITHOUT AUDIO</button>}
             {!lyriaAvailable && !hasGeminiKey && onSaveGeminiKey && (
               <div className="welcome-gemini-key">
                 <p>

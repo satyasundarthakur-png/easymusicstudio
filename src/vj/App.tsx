@@ -1101,6 +1101,7 @@ export function App() {
   const applyOnboardingSetup = useCallback(async (
     preferences: OnboardingPreferences,
     includeWelcomeCue: boolean,
+    enterStudio?: boolean,
   ) => {
     const wasFirstRun = onboardingFirstRun;
     const normalized = saveOnboardingPreferences(preferences);
@@ -1181,7 +1182,7 @@ export function App() {
     } else {
       setNotice(`${style.label} · ${normalized.bpm} BPM music setup saved.`);
     }
-    setOnboardingView(wasFirstRun && !includeWelcomeCue ? "welcome" : undefined);
+    setOnboardingView(enterStudio ? undefined : wasFirstRun && !includeWelcomeCue ? "welcome" : undefined);
   }, [applyRealtimeRequest, handleTransportToggle, lyriaRealtimeStatus.available, onboardingFirstRun, setRealtimeDeckEnabled, stopTransportAndRealtime]);
 
   const updateLyriaDeckControl = useCallback((deck: LyriaRealtimeDeckId, update: Partial<LyriaDeckControl>) => {
