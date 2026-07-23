@@ -38,7 +38,7 @@ export function setGeminiApiKey(key: string | undefined): void {
   }
 }
 
-export function hasGeminiApiKey(): boolean {
+function hasGeminiApiKey(): boolean {
   return Boolean(getGeminiApiKey());
 }
 
